@@ -1,10 +1,14 @@
 
 import 'package:hive/hive.dart';
 
+
+part 'univer_data.g.dart';
+
 @HiveType(typeId: 1)
 class UniverResponse extends HiveObject {
   @HiveField(0)
   final String name;
+  @HiveField(1)
   final List<Univer> univers;
 
   UniverResponse({required this.univers,required this.name, });
@@ -21,10 +25,15 @@ class UniverResponse extends HiveObject {
 
 @HiveType(typeId: 2)
 class Univer extends HiveObject{
+  @HiveField(0)
   List<String>? domains;
+  @HiveField(1)
   String? country;
+  @HiveField(2)
   String? alphaTwoCode;
+  @HiveField(3)
   List<String>? webPages;
+  @HiveField(4)
   String? name;
 
   Univer(
