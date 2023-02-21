@@ -1,15 +1,21 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_lesson/person_model.dart';
+import 'package:hive_lesson/univer_data.dart';
+import 'package:hive_lesson/view_univers.dart';
+import 'package:http/http.dart' as http;
 
 void main() async {
   await Hive.initFlutter();
+  Hive.registerAdapter(PersonAdapter());
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -32,7 +38,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  Box? box;
+  Box<Person>? box;
+  UniverResponse? data;
   final name = TextEditingController();
 
   void _incrementCounter(BuildContext context) {
@@ -40,16 +47,25 @@ class _MyHomePageState extends State<MyHomePage> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: Text("Name"),
-            content: TextFormField(
-              controller: name,
+            title: const Text("Name"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: name,
+                ),
+              ],
             ),
             actions: [
               ElevatedButton(
-                  onPressed: () {
-                    box!.put('name', name.text);
-                    setState(() {});
+                  onPressed: () async {
                     Navigator.pop(context);
+                    var res = await http.get(Uri.parse(
+                        "http://universities.hipolabs.com/search?country=${name.text}"));
+                    data = UniverResponse.fromJson(
+                        jsonDecode(res.body), name.text);
+
+                    setState(() {});
                   },
                   child: Text("Save"))
             ],
@@ -58,7 +74,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   hiveInit() async {
-    box = await Hive.openBox('myBox');
+    box = await Hive.openBox('personName');
   }
 
   @override
@@ -73,22 +89,50 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+      body: data == null
+          ? const SizedBox.shrink()
+          : GestureDetector(
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => ViewUniversPage(data: data)));
+              },
+              child: Container(
+                padding: EdgeInsets.all(24),
+                color: Colors.lightBlue,
+                child: Text(data?.name ?? ""),
+              ),
             ),
-            Text(
-              box?.get("name") ?? "",
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
+      // ListView.builder(
+      //     itemCount: box?.values.length ?? 0,
+      //     itemBuilder: (context, index) {
+      //       return Container(
+      //         color: Colors.lightBlue,
+      //         margin: EdgeInsets.only(bottom: 8),
+      //         padding: EdgeInsets.all(24),
+      //         child: Row(
+      //           children: [
+      //             Column(
+      //               children: [
+      //                 Text(box?.values.elementAt(index).name ?? ""),
+      //                 Text(
+      //                     (box?.values.elementAt(index).count ?? 0).toString()),
+      //                 Text(box?.keys.elementAt(index) ?? ""),
+      //               ],
+      //             ),
+      //             IconButton(
+      //                 onPressed: () {
+      //                   box!.deleteAt(index);
+      //                   setState(() {});
+      //                 },
+      //                 icon: const Icon(Icons.delete))
+      //           ],
+      //         ),
+      //       );
+      //     }),
       floatingActionButton: FloatingActionButton(
-        onPressed:() {
+        onPressed: () {
           _incrementCounter(context);
         },
         tooltip: 'Increment',
